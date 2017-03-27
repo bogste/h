@@ -7,6 +7,10 @@ from pyramid.httpexceptions import HTTPNoContent, HTTPNotFound
 
 from h.schemas import ValidationError
 from h.views.api import api_config
+from h.emails import flag_notification
+from h import links
+from memex.interfaces import IGroupService
+from h.tasks import mailer
 
 
 @api_config(route_name='api.flags',
@@ -16,8 +20,12 @@ from h.views.api import api_config
             effective_principals=security.Authenticated)
 def create(context, request):
     annotation = _fetch_annotation(context, request)
+
     svc = request.find_service(name='flag')
     svc.create(request.authenticated_user, annotation)
+
+    _email_group_admin(request, annotation)
+
     return HTTPNoContent()
 
 
@@ -37,6 +45,16 @@ def index(request):
     flags = svc.list(request.authenticated_user, group=group, uris=uris)
     return [{'annotation': flag.annotation_id} for flag in flags]
 
+
+def _email_group_admin(request, annotation):
+    group_service = request.find_service(IGroupService)
+    group = group_service.find(annotation.groupid)
+
+    incontext_link = links.incontext_link(request, annotation)
+
+    if group.creator is not None:
+        send_params = flag_notification.generate(request, group.creator.email, incontext_link)
+        mailer.send.delay(*send_params)
 
 def _fetch_annotation(context, request):
     try:

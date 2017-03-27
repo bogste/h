@@ -25,6 +25,10 @@ class TestWorldGroup(object):
 
     def test_is_public(self, group):
         assert group.is_public
+        assert group.pubid == '__world__'
+
+    def test_creator(self, group):
+        assert group.creator is None
 
     @pytest.fixture
     def group(self):
