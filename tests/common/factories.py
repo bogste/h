@@ -60,6 +60,15 @@ class Activation(ModelFactory):
         force_flush = True
 
 
+class AnnotationNipsa(ModelFactory):
+
+    class Meta(object):
+        model = models.AnnotationNipsa
+        force_flush = True
+
+    annotation = factory.SubFactory(Annotation)
+
+
 class AuthClient(ModelFactory):
 
     class Meta(object):
